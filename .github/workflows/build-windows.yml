@@ -1,0 +1,71 @@
+name: Build Windows Installer
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: x64
+      - name: Install CUDA PyTorch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+      - name: Install app dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+      - name: Build application folder
+        shell: cmd
+        run: >
+          python -m PyInstaller --noconfirm --clean --onedir --windowed
+          --name AnimeImageStudio
+          --collect-all gradio --collect-all diffusers --collect-all transformers
+          --collect-all torch --collect-all torchvision --collect-all accelerate
+          --collect-all safetensors --collect-all huggingface_hub --collect-all PIL
+          app.py
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+      - name: Create installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force installer | Out-Null
+          @'
+          [Setup]
+          AppId={{A1D8E9B0-6D1A-4D3F-9F88-ABCD12345678}
+          AppName=Anime Image Studio
+          AppVersion=1.0.0
+          AppPublisher=Anime Image Studio
+          DefaultDirName={autopf}\Anime Image Studio
+          DefaultGroupName=Anime Image Studio
+          OutputDir=installer
+          OutputBaseFilename=AnimeImageStudio-Setup-x64
+          Compression=lzma2
+          SolidCompression=yes
+          ArchitecturesInstallIn64BitMode=x64
+          PrivilegesRequired=admin
+          [Files]
+          Source: "dist\AnimeImageStudio\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
+          [Icons]
+          Name: "{autoprograms}\Anime Image Studio"; Filename: "{app}\AnimeImageStudio.exe"
+          Name: "{autodesktop}\Anime Image Studio"; Filename: "{app}\AnimeImageStudio.exe"; Tasks: desktopicon
+          [Tasks]
+          Name: "desktopicon"; Description: "Create a desktop shortcut"; Flags: unchecked
+          [Run]
+          Filename: "{app}\AnimeImageStudio.exe"; Description: "Launch Anime Image Studio"; Flags: postinstall nowait skipifsilent
+          '@ | Set-Content installer\setup.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\setup.iss
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnimeImageStudio-Windows-Installer
+          path: installer/AnimeImageStudio-Setup-x64.exe
+          if-no-files-found: error
