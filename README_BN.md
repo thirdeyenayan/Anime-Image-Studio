@@ -17,3 +17,19 @@
 
 ## সীমাবদ্ধতা
 Reference style ও subject ধরে রাখার চেষ্টা করা হয়, কিন্তু একই মুখ/পোজ/স্টাইল হুবহু থাকবে এমন নিশ্চয়তা নেই। বাস্তব GPU-তে পরীক্ষা না হওয়া পর্যন্ত এই build-কে পরীক্ষিত final বলা যাবে না।
+
+
+## Android / Mobile Web App (প্রাথমিক সংস্করণ)
+
+রেসপনসিভ ওয়েব অ্যাপটি `web/` ফোল্ডারে আছে। NVIDIA CUDA-সমর্থিত GPU-সহ কম্পিউটারে চালান:
+
+```bash
+python -m pip install -r requirements.txt
+python web_server.py
+```
+
+কম্পিউটারে `http://127.0.0.1:7861` খুলুন। একই Wi-Fi-তে থাকা Android ফোন থেকে `http://<কম্পিউটারের-LAN-IP>:7861` খুলে পরীক্ষা করা যাবে। Android-এ PWA হিসেবে ইনস্টল করতে HTTPS-সহ হোস্টিং প্রয়োজন (localhost ছাড়া service worker-এর জন্য secure context লাগে)।
+
+ছবি ব্রাউজার থেকে সার্ভারে যাবে এবং AI মডেল সার্ভারের GPU-তে চলবে। কোনো paid inference API ব্যবহার করা হয়নি। প্রথমবার SDXL/IP-Adapter মডেল ডাউনলোড হবে।
+
+এটি প্রাথমিক mobile web সংস্করণ। Login, subscription payment, user quota, production hosting এবং native Android APK এখনো তৈরি হয়নি।
