@@ -97,3 +97,7 @@ def home():
     return FileResponse(WEB / "index.html")
 
 api.mount("/", StaticFiles(directory=WEB, html=True), name="web")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(api, host="0.0.0.0", port=7861)
