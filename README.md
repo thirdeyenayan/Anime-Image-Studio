@@ -22,3 +22,19 @@ Reference image guidance is approximate; exact identity, pose, and style replica
 
 ## License
 Application source: MIT. Model weights and dependencies retain their upstream licenses. See THIRD_PARTY_NOTICES.md.
+
+
+## Mobile-friendly web app (PWA)
+
+The repository includes a responsive browser app in `web/`. Start the FastAPI server on a supported NVIDIA CUDA machine:
+
+```bash
+python -m pip install -r requirements.txt
+python web_server.py
+```
+
+Open `http://127.0.0.1:7861` on the computer. To test from an Android phone on the same Wi-Fi, open `http://<computer-LAN-IP>:7861`. For installable PWA mode on Android, deploy behind HTTPS (service workers require a secure context outside localhost).
+
+The browser interface sends images to this server for processing. The AI model runs on the server GPU; the PWA itself is not an on-device Android AI model. No paid inference API is used. The first conversion downloads the SDXL/IP-Adapter model weights.
+
+This mobile PWA is an early implementation. Authentication, subscription billing, user quotas, hosted production infrastructure, and native Android packaging are not implemented yet.
