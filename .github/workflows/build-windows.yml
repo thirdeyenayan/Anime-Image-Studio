@@ -34,7 +34,9 @@ jobs:
           --collect-all gradio --collect-all diffusers --collect-all transformers
           --collect-all torch --collect-all torchvision --collect-all accelerate
           --collect-all safetensors --collect-all huggingface_hub --collect-all PIL
-          app.py
+          --collect-all fastapi --collect-all starlette --collect-all uvicorn
+          --collect-all multipart --add-data "web;web"
+          desktop.py
       - name: Install Inno Setup
         run: choco install innosetup --yes --no-progress
       - name: Create installer
@@ -49,7 +51,7 @@ jobs:
           AppPublisher=Anime Image Studio
           DefaultDirName={autopf}\Anime Image Studio
           DefaultGroupName=Anime Image Studio
-          OutputDir=installer
+          OutputDir=..
           OutputBaseFilename=AnimeImageStudio-Setup-x64
           Compression=lzma2
           SolidCompression=yes
