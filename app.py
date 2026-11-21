@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Optional
 import gradio as gr
 import torch
+import cv2
+import numpy as np
 from PIL import Image, ImageOps
 from diffusers import AutoPipelineForImage2Image
 from transformers import CLIPVisionModelWithProjection
@@ -29,9 +31,21 @@ NEG = "photorealistic, live action, blurry, low quality, lowres, deformed, bad a
 pipe = None
 lock = threading.Lock()
 
-def gpu_status():
+def cpu_cartoon(image: Image.Image) -> Image.Image:
+    rgb = np.asarray(image.convert("RGB"))
+    bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+    stylized = cv2.stylization(bgr, sigma_s=60, sigma_r=0.45)
+    return Image.fromarray(cv2.cvtColor(stylized, cv2.COLOR_BGR2RGB))
+
+def supports_sdxl() -> bool:
     if not torch.cuda.is_available():
-        return "CUDA GPU not detected. A modern NVIDIA GPU is required."
+        return False
+    props = torch.cuda.get_device_properties(0)
+    return props.total_memory >= 8 * 1024**3 and torch.cuda.get_device_capability(0)[0] >= 7
+
+def gpu_status():
+    if not supports_sdxl():
+        return "CPU Cartoon mode available · SDXL needs a supported NVIDIA GPU with 8GB+ VRAM."
     p = torch.cuda.get_device_properties(0)
     return f"{p.name} · {p.total_memory / 1024**3:.1f} GB VRAM · CUDA {torch.version.cuda}"
 
@@ -70,6 +84,12 @@ def create(original: Optional[Image.Image], reference: Optional[Image.Image], st
            progress=gr.Progress()):
     if original is None:
         raise gr.Error("Please upload an original image.")
+    if not supports_sdxl():
+        result = cpu_cartoon(original)
+        path = OUT / f"cartoon_{int(seed)}.png"
+        result.save(path, "PNG")
+        progress(1.0, desc="Finished with CPU Cartoon mode")
+        return result, str(path), gpu_status()
     p = load_model(progress)
     size = 1024 if quality == "High" else 768
     init = resize(original, size)
@@ -115,6 +135,6 @@ with gr.Blocks(title="Anime Image Studio", theme=gr.themes.Soft()) as ui:
             status = gr.Textbox(label="GPU status", value=gpu_status(), interactive=False)
     btn.click(create, [original, reference, style, extra, strength, ref_weight, quality, seed],
               [result, saved, status])
-    gr.Markdown("First launch downloads several GB of model weights. Requires NVIDIA CUDA GPU with 8GB+ VRAM (12GB+ preferred). Exact face/style preservation is not guaranteed.")
+    gr.Markdown("First launch downloads several GB of model weights for SDXL mode. Without a supported NVIDIA GPU, the app uses a lightweight CPU Cartoon filter. Exact face/style preservation is not guaranteed.")
 if __name__ == "__main__":
     ui.queue().launch(server_name="127.0.0.1", server_port=7860, inbrowser=True, show_error=True)
