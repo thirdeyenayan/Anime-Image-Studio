@@ -7,17 +7,23 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.os.Build
 import android.provider.MediaStore
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.ScrollView
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.VideoView
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
+import java.io.File
 import java.io.OutputStream
 import java.util.concurrent.Executors
 import kotlin.math.abs
@@ -27,13 +33,23 @@ import kotlin.math.min
 class MainActivity : ComponentActivity() {
     private val executor = Executors.newSingleThreadExecutor()
     private lateinit var preview: ImageView
+    private lateinit var videoPreview: VideoView
     private lateinit var status: TextView
-    private lateinit var convertButton: Button
+    private lateinit var progress: ProgressBar
+    private lateinit var imageConvert: Button
+    private lateinit var videoConvert: Button
     private var source: Bitmap? = null
-    private var result: Bitmap? = null
+    private var imageResult: Bitmap? = null
+    private var selectedVideo: Uri? = null
+    private var savedVideoUri: Uri? = null
+    private var strength = 65
+    private var busy = false
 
-    private val picker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+    private val imagePicker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) loadImage(uri)
+    }
+    private val videoPicker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) loadVideo(uri)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,8 +60,8 @@ class MainActivity : ComponentActivity() {
     private fun buildUi() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(22, 26, 22, 24)
-            setBackgroundColor(Color.rgb(13, 17, 30))
+            setPadding(20, 18, 20, 20)
+            setBackgroundColor(Color.rgb(12, 16, 29))
         }
         val scroll = ScrollView(this)
         val content = LinearLayout(this).apply {
@@ -54,44 +70,82 @@ class MainActivity : ComponentActivity() {
         }
         val title = TextView(this).apply {
             text = "Anime Image Studio"
-            textSize = 27f
+            textSize = 28f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
-            setPadding(0, 10, 0, 6)
+            setPadding(0, 12, 0, 4)
         }
         val subtitle = TextView(this).apply {
-            text = "Turn your photos into anime-inspired artwork"
-            textSize = 14f
+            text = "Create anime-inspired images and videos on your phone"
+            textSize = 13f
             setTextColor(Color.LTGRAY)
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 18)
+            setPadding(0, 0, 0, 16)
         }
         preview = ImageView(this).apply {
-            setBackgroundColor(Color.rgb(29, 36, 55))
+            setBackgroundColor(Color.rgb(28, 35, 54))
             scaleType = ImageView.ScaleType.FIT_CENTER
             adjustViewBounds = true
-            minimumHeight = 300
+            minimumHeight = 280
+        }
+        videoPreview = VideoView(this).apply {
+            visibility = View.GONE
+            setBackgroundColor(Color.BLACK)
         }
         status = TextView(this).apply {
-            text = "Choose a photo to get started."
+            text = "Choose an image or a video to begin."
             textSize = 14f
             setTextColor(Color.LTGRAY)
             gravity = Gravity.CENTER
-            setPadding(0, 16, 0, 16)
+            setPadding(0, 14, 0, 10)
         }
-        val choose = makeButton("Choose Photo") { picker.launch("image/*") }
-        convertButton = makeButton("Create Anime Image") { convert() }.apply { isEnabled = false }
-        val save = makeButton("Save PNG to Gallery") { saveResult() }
-        val share = makeButton("Share Image") { shareResult() }
+        progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100
+            visibility = View.GONE
+        }
+        val chooseImage = makeButton("Choose Photo") { if (!busy) imagePicker.launch("image/*") }
+        val chooseVideo = makeButton("Choose Video (up to 30 seconds)") { if (!busy) videoPicker.launch("video/*") }
+        val strengthLabel = TextView(this).apply {
+            text = "Anime effect strength: 65%"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            setPadding(4, 12, 4, 2)
+        }
+        val strengthBar = SeekBar(this).apply {
+            max = 100
+            progress = strength
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, value: Int, fromUser: Boolean) {
+                    strength = value.coerceAtLeast(10)
+                    strengthLabel.text = "Anime effect strength: $strength%"
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+        }
+        imageConvert = makeButton("Create Anime Image") { convertImage() }.apply { isEnabled = false }
+        videoConvert = makeButton("Convert Video to Anime") { convertVideo() }.apply { isEnabled = false }
+        val saveImage = makeButton("Save Image to Gallery") { saveImageResult() }
+        val shareImage = makeButton("Share Image") { shareImageResult() }
+        val saveVideo = makeButton("Save Converted Video") { saveVideoResult() }
+        val shareVideo = makeButton("Share Converted Video") { shareVideoResult() }
 
         content.addView(title)
         content.addView(subtitle)
-        content.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f).apply { height = 460 })
+        content.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 430))
+        content.addView(videoPreview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 280))
         content.addView(status)
-        content.addView(choose)
-        content.addView(convertButton)
-        content.addView(save)
-        content.addView(share)
+        content.addView(progress)
+        content.addView(chooseImage)
+        content.addView(chooseVideo)
+        content.addView(strengthLabel)
+        content.addView(strengthBar)
+        content.addView(imageConvert)
+        content.addView(videoConvert)
+        content.addView(saveImage)
+        content.addView(shareImage)
+        content.addView(saveVideo)
+        content.addView(shareVideo)
         scroll.addView(content)
         root.addView(scroll)
         setContentView(root)
@@ -101,10 +155,10 @@ class MainActivity : ComponentActivity() {
         Button(this).apply {
             text = label
             isAllCaps = false
-            textSize = 16f
+            textSize = 15f
             setOnClickListener { action() }
             val p = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            p.setMargins(0, 6, 0, 6)
+            p.setMargins(0, 5, 0, 5)
             layoutParams = p
         }
 
@@ -112,16 +166,37 @@ class MainActivity : ComponentActivity() {
         try {
             contentResolver.openInputStream(uri).use { stream ->
                 val decoded = BitmapFactory.decodeStream(stream) ?: error("Unsupported image")
-                source = resize(decoded, 1400)
-                result = null
+                source = resize(decoded, 1600)
+                imageResult = null
+                selectedVideo = null
+                videoPreview.stopPlayback()
+                videoPreview.visibility = View.GONE
+                preview.visibility = View.VISIBLE
                 preview.setImageBitmap(source)
-                convertButton.isEnabled = true
-                status.text = "Photo loaded. Tap Create Anime Image."
+                imageConvert.isEnabled = true
+                videoConvert.isEnabled = false
+                status.text = "Photo ready. Adjust the strength and create your artwork."
             }
         } catch (e: Exception) {
-            status.text = "Could not open this image."
-            Toast.makeText(this, e.message ?: "Image error", Toast.LENGTH_LONG).show()
+            showError("Could not open image: ${e.message}")
         }
+    }
+
+    private fun loadVideo(uri: Uri) {
+        selectedVideo = uri
+        source = null
+        imageResult = null
+        preview.visibility = View.GONE
+        videoPreview.visibility = View.VISIBLE
+        videoPreview.setVideoURI(uri)
+        videoPreview.setOnPreparedListener { player ->
+            player.isLooping = true
+            videoPreview.start()
+        }
+        imageConvert.isEnabled = false
+        videoConvert.isEnabled = true
+        savedVideoUri = null
+        status.text = "Video selected. Conversion supports clips up to 30 seconds."
     }
 
     private fun resize(input: Bitmap, maxSide: Int): Bitmap {
@@ -131,94 +206,164 @@ class MainActivity : ComponentActivity() {
             (input.height * scale).toInt().coerceAtLeast(1), true)
     }
 
-    private fun convert() {
+    private fun convertImage() {
         val input = source ?: return
-        convertButton.isEnabled = false
-        status.text = "Creating your artwork…"
+        setBusy(true, "Creating anime-style image…")
         executor.execute {
             try {
-                val output = cartoonize(input)
+                val output = cartoonize(input, strength)
                 runOnUiThread {
-                    result = output
+                    imageResult = output
                     preview.setImageBitmap(output)
-                    status.text = "Done! Save the PNG or share it."
-                    convertButton.isEnabled = true
+                    setBusy(false, "Image ready. Save it to your gallery or share it.")
                 }
             } catch (e: Exception) {
-                runOnUiThread {
-                    status.text = "Conversion failed: ${e.message}"
-                    convertButton.isEnabled = true
-                }
+                runOnUiThread { setBusy(false, "Image conversion failed: ${e.message}") }
             }
         }
     }
 
-    // Lightweight on-device posterization and ink-edge pass; no network or GPU required.
-    private fun cartoonize(input: Bitmap): Bitmap {
+    private fun cartoonize(input: Bitmap, amount: Int): Bitmap {
         val w = input.width
         val h = input.height
         val pixels = IntArray(w * h)
         input.getPixels(pixels, 0, w, 0, 0, w, h)
-        val out = IntArray(pixels.size)
-        fun luminance(c: Int): Int = (Color.red(c) * 299 + Color.green(c) * 587 + Color.blue(c) * 114) / 1000
-        for (y in 0 until h) {
-            for (x in 0 until w) {
-                val i = y * w + x
-                val c = pixels[i]
-                val r = (Color.red(c) / 32) * 32 + 16
-                val g = (Color.green(c) / 32) * 32 + 16
-                val b = (Color.blue(c) / 32) * 32 + 16
-                var edge = 0
-                if (x > 0 && x < w - 1 && y > 0 && y < h - 1) {
-                    val gx = abs(luminance(pixels[i + 1]) - luminance(pixels[i - 1]))
-                    val gy = abs(luminance(pixels[i + w]) - luminance(pixels[i - w]))
-                    edge = gx + gy
+        val smooth = IntArray(pixels.size)
+        fun lum(c: Int) = (Color.red(c) * 299 + Color.green(c) * 587 + Color.blue(c) * 114) / 1000
+        // Small edge-aware neighborhood smoothing reduces photo texture before color quantization.
+        for (y in 0 until h) for (x in 0 until w) {
+            val i = y * w + x
+            var rr = 0; var gg = 0; var bb = 0; var n = 0
+            val center = pixels[i]
+            for (dy in -1..1) for (dx in -1..1) {
+                val xx = (x + dx).coerceIn(0, w - 1)
+                val yy = (y + dy).coerceIn(0, h - 1)
+                val c = pixels[yy * w + xx]
+                if (abs(lum(c) - lum(center)) < 48) {
+                    rr += Color.red(c); gg += Color.green(c); bb += Color.blue(c); n++
                 }
-                val ink = if (edge > 95) 0.30f else 1f
-                out[i] = Color.rgb((r * ink).toInt().coerceIn(0,255),
-                    (g * ink).toInt().coerceIn(0,255), (b * ink).toInt().coerceIn(0,255))
             }
+            smooth[i] = Color.rgb(rr / n.coerceAtLeast(1), gg / n.coerceAtLeast(1), bb / n.coerceAtLeast(1))
+        }
+        val out = IntArray(pixels.size)
+        val step = if (amount > 75) 24 else if (amount > 45) 32 else 40
+        val edgeThreshold = 150 - amount
+        for (y in 0 until h) for (x in 0 until w) {
+            val i = y * w + x
+            val c = smooth[i]
+            val r = (Color.red(c) / step) * step + step / 2
+            val g = (Color.green(c) / step) * step + step / 2
+            val b = (Color.blue(c) / step) * step + step / 2
+            var edge = 0
+            if (x in 1 until w - 1 && y in 1 until h - 1) {
+                edge = abs(lum(pixels[i + 1]) - lum(pixels[i - 1])) +
+                    abs(lum(pixels[i + w]) - lum(pixels[i - w]))
+            }
+            val ink = if (edge > edgeThreshold) (1f - amount / 145f).coerceIn(0.22f, 0.72f) else 1f
+            out[i] = Color.rgb((r * ink).toInt().coerceIn(0,255),
+                (g * ink).toInt().coerceIn(0,255), (b * ink).toInt().coerceIn(0,255))
         }
         return Bitmap.createBitmap(out, w, h, Bitmap.Config.ARGB_8888)
     }
 
-    private fun saveResult() {
-        val bitmap = result ?: run {
-            Toast.makeText(this, "Create an image first.", Toast.LENGTH_SHORT).show(); return
+    private fun convertVideo() {
+        val uri = selectedVideo ?: return
+        setBusy(true, "Preparing video…")
+        executor.execute {
+            try {
+                val file = VideoCartoonizer.convert(this, uri) { value ->
+                    runOnUiThread { progress.progress = value; status.text = "Converting video… $value%" }
+                }
+                val saved = saveVideoFile(file)
+                runOnUiThread {
+                    savedVideoUri = saved
+                    videoPreview.setVideoURI(saved)
+                    videoPreview.setOnPreparedListener { it.isLooping = true; videoPreview.start() }
+                    setBusy(false, "Video converted successfully. Save/share is ready.")
+                    file.delete()
+                }
+            } catch (e: Exception) {
+                runOnUiThread { setBusy(false, "Video conversion failed: ${e.message}") }
+            }
         }
+    }
+
+    private fun saveVideoFile(file: File): Uri {
+        val values = ContentValues().apply {
+            put(MediaStore.Video.Media.DISPLAY_NAME, "AnimeStudio_${System.currentTimeMillis()}.mp4")
+            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+            if (Build.VERSION.SDK_INT >= 29) put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/AnimeImageStudio")
+        }
+        val uri = contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
+            ?: error("Could not create gallery video")
+        try {
+            contentResolver.openOutputStream(uri).use { out ->
+                if (out == null) error("Could not save video")
+                file.inputStream().use { it.copyTo(out) }
+            }
+        } catch (e: Exception) {
+            contentResolver.delete(uri, null, null)
+            throw e
+        }
+        return uri
+    }
+
+    private fun saveImageResult() {
+        val bitmap = imageResult ?: run { toast("Create an image first."); return }
         try {
             val values = ContentValues().apply {
                 put(MediaStore.Images.Media.DISPLAY_NAME, "AnimeStudio_${System.currentTimeMillis()}.png")
                 put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/AnimeImageStudio")
+                if (Build.VERSION.SDK_INT >= 29) put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/AnimeImageStudio")
             }
             val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-                ?: error("Could not create gallery file")
+                ?: error("Could not create gallery image")
             contentResolver.openOutputStream(uri).use { stream: OutputStream? ->
                 if (stream == null) error("Could not write image")
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
             }
-            Toast.makeText(this, "Saved to Pictures/AnimeImageStudio", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, e.message ?: "Save failed", Toast.LENGTH_LONG).show()
-        }
+            toast("Saved to Pictures/AnimeImageStudio")
+        } catch (e: Exception) { showError("Save failed: ${e.message}") }
     }
 
-    private fun shareResult() {
-        val bitmap = result ?: run {
-            Toast.makeText(this, "Create an image first.", Toast.LENGTH_SHORT).show(); return
-        }
-        val path = MediaStore.Images.Media.insertImage(contentResolver, bitmap, "Anime Image Studio", null)
-        if (path == null) {
-            Toast.makeText(this, "Could not prepare image to share.", Toast.LENGTH_SHORT).show(); return
-        }
+    private fun shareImageResult() {
+        val bitmap = imageResult ?: run { toast("Create an image first."); return }
+        try {
+            val path = MediaStore.Images.Media.insertImage(contentResolver, bitmap, "Anime Image Studio", null)
+            if (path == null) error("Could not prepare image")
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"; putExtra(Intent.EXTRA_STREAM, Uri.parse(path))
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intent, "Share anime artwork"))
+        } catch (e: Exception) { showError("Share failed: ${e.message}") }
+    }
+
+    private fun saveVideoResult() {
+        if (savedVideoUri == null) { toast("Convert a video first."); return }
+        toast("Video is saved in Movies/AnimeImageStudio")
+    }
+
+    private fun shareVideoResult() {
+        val uri = savedVideoUri ?: run { toast("Convert a video first."); return }
         val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "image/png"
-            putExtra(Intent.EXTRA_STREAM, Uri.parse(path))
+            type = "video/mp4"; putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        startActivity(Intent.createChooser(intent, "Share anime artwork"))
+        startActivity(Intent.createChooser(intent, "Share anime video"))
     }
+
+    private fun setBusy(value: Boolean, message: String) {
+        busy = value
+        progress.visibility = if (value) View.VISIBLE else View.GONE
+        if (!value) progress.progress = 0
+        imageConvert.isEnabled = !value && source != null
+        videoConvert.isEnabled = !value && selectedVideo != null
+        status.text = message
+    }
+
+    private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    private fun showError(message: String) { status.text = message; toast(message) }
 
     override fun onDestroy() {
         executor.shutdown()
