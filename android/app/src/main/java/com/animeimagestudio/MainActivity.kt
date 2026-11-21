@@ -1,6 +1,5 @@
 package com.animeimagestudio
 
-import android.app.Activity
 import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
@@ -18,14 +17,14 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import java.io.OutputStream
 import java.util.concurrent.Executors
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
     private val executor = Executors.newSingleThreadExecutor()
     private lateinit var preview: ImageView
     private lateinit var status: TextView
