@@ -11,7 +11,7 @@
 6. PNG output ফোল্ডারে সেভ হবে।
 
 ## GPU
-আধুনিক NVIDIA CUDA GPU দরকার। 8GB VRAM ন্যূনতম ব্যবহারিক লক্ষ্য, 12GB+ ভালো। GeForce 820M 2GB এই মডেল চালাতে পারবে না। CPU mode বন্ধ রাখা হয়েছে কারণ SDXL CPU-তে অত্যন্ত ধীর।
+আধুনিক NVIDIA CUDA GPU দরকার। 8GB VRAM ন্যূনতম ব্যবহারিক লক্ষ্য, 12GB+ ভালো। GeForce 820M 2GB-তে SDXL চলবে না, তবে CPU Cartoon fallback ব্যবহার করা যাবে। সমর্থিত NVIDIA GPU না থাকলে OpenCV-ভিত্তিক CPU Cartoon filter চলবে। এটি দ্রুত সাধারণ cartoon effect; SDXL-এর মতো বিস্তারিত AI anime generation নয়।
 
 প্রথমবার কয়েক GB model files ডাউনলোড হবে। Model weights installer-এ নেই।
 
