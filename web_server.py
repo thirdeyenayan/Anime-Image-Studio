@@ -28,6 +28,8 @@ def health():
         "engine": "SDXL + IP-Adapter",
         "cuda_available": torch.cuda.is_available(),
         "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+        "sdxl_available": anime_engine.supports_sdxl(),
+        "cpu_cartoon_available": True,
     }
 
 @api.post("/api/convert")
@@ -61,6 +63,16 @@ async def convert(
         prompt += ", " + details.strip()[:400]
 
     try:
+        if not anime_engine.supports_sdxl():
+            result = anime_engine.cpu_cartoon(original)
+            output = io.BytesIO()
+            result.save(output, format="PNG")
+            output.seek(0)
+            return StreamingResponse(
+                output,
+                media_type="image/png",
+                headers={"Content-Disposition": 'attachment; filename="anime-cartoon.png"'},
+            )
         pipe = anime_engine.load_model(lambda *args, **kwargs: None)
         max_side = 1024 if quality == "High" else 768
         init = anime_engine.resize(original, max_side)
