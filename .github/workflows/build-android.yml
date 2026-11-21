@@ -33,9 +33,8 @@ jobs:
 
       - name: Set up Android build tools
         uses: android-actions/setup-android@v3
-
-      - name: Install Android signing tools
-        run: sdkmanager "build-tools;35.0.0"
+        with:
+          packages: 'platform-tools build-tools;35.0.0'
 
       - name: Build and verify branded APK
         run: bash scripts/build-android-apk.sh
