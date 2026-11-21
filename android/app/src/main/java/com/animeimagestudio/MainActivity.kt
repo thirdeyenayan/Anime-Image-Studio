@@ -36,6 +36,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var imageConvert: Button
     private var source: Bitmap? = null
     private var imageResult: Bitmap? = null
+    private var showOriginal = false
     private var strength = 65
     private var busy = false
 
@@ -79,7 +80,7 @@ class MainActivity : ComponentActivity() {
             minimumHeight = 280
         }
         status = TextView(this).apply {
-            text = "Choose an image or a video to begin."
+            text = "Choose a photo to begin."
             textSize = 14f
             setTextColor(Color.LTGRAY)
             gravity = Gravity.CENTER
@@ -109,6 +110,14 @@ class MainActivity : ComponentActivity() {
             })
         }
         imageConvert = makeButton("Create Anime Image") { convertImage() }.apply { isEnabled = false }
+        val compareImage = makeButton("Before / After") {
+            val original = source
+            if (original != null) {
+                showOriginal = !showOriginal
+                preview.setImageBitmap(if (showOriginal) original else imageResult ?: original)
+                status.text = if (showOriginal) "Showing original photo." else if (imageResult != null) "Showing converted artwork." else "Create the anime photo first."
+            }
+        }
         val saveImage = makeButton("Save Image to Gallery") { saveImageResult() }
         val shareImage = makeButton("Share Image") { shareImageResult() }
 
@@ -121,6 +130,7 @@ class MainActivity : ComponentActivity() {
         content.addView(strengthLabel)
         content.addView(strengthBar)
         content.addView(imageConvert)
+        content.addView(compareImage)
         content.addView(saveImage)
         content.addView(shareImage)
         scroll.addView(content)
@@ -144,7 +154,9 @@ class MainActivity : ComponentActivity() {
             contentResolver.openInputStream(uri).use { stream ->
                 val decoded = BitmapFactory.decodeStream(stream) ?: error("Unsupported image")
                 source = resize(decoded, 1600)
+                imageResult?.recycle()
                 imageResult = null
+                showOriginal = false
                 preview.setImageBitmap(source)
                 imageConvert.isEnabled = true
                 status.text = "Photo ready. Adjust the strength and create your artwork."
@@ -168,7 +180,9 @@ class MainActivity : ComponentActivity() {
             try {
                 val output = cartoonize(input, strength)
                 runOnUiThread {
+                    imageResult?.recycle()
                     imageResult = output
+                    showOriginal = false
                     preview.setImageBitmap(output)
                     setBusy(false, "Image ready. Save it to your gallery or share it.")
                 }
@@ -265,6 +279,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         executor.shutdown()
+        source?.recycle()
+        imageResult?.recycle()
         super.onDestroy()
     }
 }
