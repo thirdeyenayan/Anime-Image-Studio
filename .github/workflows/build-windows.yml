@@ -58,7 +58,7 @@ jobs:
           ArchitecturesInstallIn64BitMode=x64
           PrivilegesRequired=admin
           [Files]
-          Source: "dist\AnimeImageStudio\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
+          Source: "..\dist\AnimeImageStudio\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
           [Icons]
           Name: "{autoprograms}\Anime Image Studio"; Filename: "{app}\AnimeImageStudio.exe"
           Name: "{autodesktop}\Anime Image Studio"; Filename: "{app}\AnimeImageStudio.exe"; Tasks: desktopicon
