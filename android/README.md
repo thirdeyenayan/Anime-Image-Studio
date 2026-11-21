@@ -1,14 +1,17 @@
 # Anime Image Studio for Android
 
-A native Android app that runs the first photo-to-cartoon workflow entirely on the phone.
+A photo-only Android app for converting still photos into anime-inspired artwork.
 
-## Features in this first Android release
-- Pick a photo from the Android photo picker.
-- Generate an anime-inspired cartoon effect locally on the device.
-- Preview the result.
-- Save PNG output to Pictures/AnimeImageStudio.
-- Share the result with other apps.
-- No account, API key, internet connection, or GPU required for this lightweight effect.
+## Included photo workflow
+- Select a photo using the Android system photo picker.
+- Apply an offline, on-device cartoon/anime-inspired color and ink filter.
+- Adjust effect strength.
+- Preview the converted photo.
+- Save the result as PNG in `Pictures/AnimeImageStudio`.
+- Share the resulting image with other apps.
+
+## Important quality note
+The current image engine is a lightweight image-processing filter. It does not use a generative AI model such as Stable Diffusion, and it should not be described as equivalent to a true AI anime transformation. No API key, account, network connection, or cloud processing is needed.
 
 ## Build
 Requires JDK 17 and Gradle 8.9:
@@ -17,5 +20,4 @@ gradle --no-daemon assembleDebug
 ```
 APK: `app/build/outputs/apk/debug/app-debug.apk`
 
-## Current limitation
-This first Android build uses a lightweight on-device posterization and edge-ink filter. It is not the same quality as the SDXL/IP-Adapter AI pipeline in the Python desktop prototype. The advanced AI model integration is a later phase.
+This Android app is intentionally photo-only. Video import and video conversion are out of scope.
