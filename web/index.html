@@ -41,7 +41,7 @@
       <div class="status" id="serverStatus">Checking AI engine…</div>
     </section>
   </main>
-  <p class="foot">Anime Image Studio · Local-first AI · Images are processed by the AI server you connect to.</p>
+  <p class="foot">Anime Image Studio · Local-first AI · Images are processed by the server you connect to. SDXL needs a supported NVIDIA GPU; otherwise a lightweight CPU cartoon filter is used.</p>
 </div>
 <script>
 let selectedFile=null, quality="Balanced", resultUrl=null;
@@ -75,7 +75,7 @@ createBtn.addEventListener("click",async()=>{
  finally{clearInterval(ticker);createBtn.disabled=false;setTimeout(()=>$("progress").style.display="none",1200)}
 });
 $("reset").addEventListener("click",()=>{selectedFile=null;fileInput.value="";$("sourcePreview").classList.add("hidden");$("uploadHint").classList.remove("hidden");$("output").classList.add("hidden");$("empty").classList.remove("hidden");$("download").removeAttribute("href");$("download").setAttribute("aria-disabled","true");if(resultUrl)URL.revokeObjectURL(resultUrl);resultUrl=null;createBtn.disabled=true;setStatus("Choose a photo to begin.")});
-fetch("/api/health").then(r=>r.json()).then(h=>{$("serverStatus").textContent=h.cuda_available?"AI engine online · "+h.gpu:"Server online · NVIDIA CUDA GPU not detected";}).catch(()=>$("serverStatus").textContent="AI server unavailable. Start web_server.py on your PC.");
+fetch("/api/health").then(r=>r.json()).then(h=>{$("serverStatus").textContent=h.sdxl_available?"SDXL AI engine online · "+h.gpu:"CPU Cartoon mode available · SDXL needs a supported NVIDIA GPU";}).catch(()=>$("serverStatus").textContent="AI server unavailable. Start web_server.py on your PC.");
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 </script>
 </body></html>
