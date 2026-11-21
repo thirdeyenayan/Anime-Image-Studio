@@ -23,7 +23,6 @@ Reference image guidance is approximate; exact identity, pose, and style replica
 ## License
 Application source: MIT. Model weights and dependencies retain their upstream licenses. See THIRD_PARTY_NOTICES.md.
 
-
 ## Mobile-friendly web app (PWA)
 
 The repository includes a responsive browser app in `web/`. Start the FastAPI server on a supported NVIDIA CUDA machine:
@@ -39,6 +38,8 @@ The browser interface sends images to this server for processing. The AI model r
 
 This mobile PWA is an early implementation. Authentication, subscription billing, user quotas, hosted production infrastructure, and native Android packaging are not implemented yet.
 
-
 ## Windows desktop app
 The Windows installer launches the same responsive web interface locally in your default browser. The desktop build includes the web UI and local FastAPI server. The AI model still requires a supported NVIDIA CUDA GPU (8 GB VRAM practical minimum, 12 GB+ preferred); the installer does not include model weights, which download on first conversion.
+
+## Android APK — on-device AI
+The Android workflow packages the official Local Dream arm64 AI app under the visible launcher name **Anime Image Studio**. It uses on-device Stable Diffusion image generation and image-to-image; it does not use the removed fal.ai/Render backend. Build it from **Actions → Build Anime Image Studio Android APK → Run workflow** and download the `Anime-Image-Studio-Android-APK` artifact after a successful run. See [android/README.md](android/README.md) for device requirements, model setup, and licensing. The Android package is arm64-v8a and requires Android 9+.

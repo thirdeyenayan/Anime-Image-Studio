@@ -18,7 +18,6 @@
 ## সীমাবদ্ধতা
 Reference style ও subject ধরে রাখার চেষ্টা করা হয়, কিন্তু একই মুখ/পোজ/স্টাইল হুবহু থাকবে এমন নিশ্চয়তা নেই। বাস্তব GPU-তে পরীক্ষা না হওয়া পর্যন্ত এই build-কে পরীক্ষিত final বলা যাবে না।
 
-
 ## Android / Mobile Web App (প্রাথমিক সংস্করণ)
 
 রেসপনসিভ ওয়েব অ্যাপটি `web/` ফোল্ডারে আছে। NVIDIA CUDA-সমর্থিত GPU-সহ কম্পিউটারে চালান:
@@ -34,6 +33,9 @@ python web_server.py
 
 এটি প্রাথমিক mobile web সংস্করণ। Login, subscription payment, user quota, production hosting এবং native Android APK এখনো তৈরি হয়নি।
 
-
 ## Windows Desktop App
 Windows installer ইনস্টল করে চালু করলে একই responsive interface আপনার default browser-এ local PC-তে খুলবে। Desktop build-এ web UI এবং local FastAPI server থাকবে। AI model চালাতে 8GB+ VRAM-সহ উপযুক্ত NVIDIA CUDA GPU প্রয়োজন (12GB+ ভালো)। Installer-এর মধ্যে model weights নেই; প্রথমবার conversion-এর সময় ডাউনলোড হবে।
+
+## Android APK — ফোনেই AI Anime তৈরি
+
+Android-এর জন্য এখন Local Dream-এর arm64 AI ইঞ্জিনসহ APK তৈরি হয়; ফোনে অ্যাপের নাম দেখাবে **Anime Image Studio**। ছবি কোনো paid fal.ai/Render সার্ভারে পাঠানো হয় না। GitHub-এর **Actions → Build Anime Image Studio Android APK → Run workflow** চালিয়ে সফল হলে `Anime-Image-Studio-Android-APK` artifact থেকে APK নিন। বিস্তারিত: [android/README.md](android/README.md)। প্রথমবার SD 1.5 Anime মডেল ডাউনলোড করতে ইন্টারনেট লাগবে; মডেল ডাউনলোড হওয়ার পর ফোনে অফলাইনে জেনারেশন করা যাবে। 8GB RAM ফোনে 512×512 দিয়ে শুরু করুন; গতি ও স্থিতিশীলতা ফোনের chipset-এর উপর নির্ভর করবে।

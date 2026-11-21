@@ -1,0 +1,15 @@
+Anime Image Studio Android build — third-party attribution
+
+This Android package is based on Local Dream by xororz:
+https://github.com/xororz/local-dream
+
+Upstream release: v2.8.1
+Upstream APK: LocalDream_armv8a_2.8.1.apk
+Upstream SHA-256: c8ba61769564ed13bcfb7e13cc48bb3bf6e3f9fd26db132a0bb2d6aa00a31edb
+
+Local Dream is licensed under Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0):
+https://creativecommons.org/licenses/by-nc/4.0/
+
+This derivative build changes the visible application label to "Anime Image Studio" and includes this attribution notice. It is provided for personal, non-commercial use. The upstream project authors do not endorse this rebranded build.
+
+The Android package retains the upstream application ID io.github.xororz.localdream and upstream application functionality. Model weights and other third-party components may carry separate licenses; review each model's terms before use.
