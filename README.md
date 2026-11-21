@@ -38,3 +38,7 @@ Open `http://127.0.0.1:7861` on the computer. To test from an Android phone on t
 The browser interface sends images to this server for processing. The AI model runs on the server GPU; the PWA itself is not an on-device Android AI model. No paid inference API is used. The first conversion downloads the SDXL/IP-Adapter model weights.
 
 This mobile PWA is an early implementation. Authentication, subscription billing, user quotas, hosted production infrastructure, and native Android packaging are not implemented yet.
+
+
+## Windows desktop app
+The Windows installer launches the same responsive web interface locally in your default browser. The desktop build includes the web UI and local FastAPI server. The AI model still requires a supported NVIDIA CUDA GPU (8 GB VRAM practical minimum, 12 GB+ preferred); the installer does not include model weights, which download on first conversion.
