@@ -33,3 +33,7 @@ python web_server.py
 ছবি ব্রাউজার থেকে সার্ভারে যাবে এবং AI মডেল সার্ভারের GPU-তে চলবে। কোনো paid inference API ব্যবহার করা হয়নি। প্রথমবার SDXL/IP-Adapter মডেল ডাউনলোড হবে।
 
 এটি প্রাথমিক mobile web সংস্করণ। Login, subscription payment, user quota, production hosting এবং native Android APK এখনো তৈরি হয়নি।
+
+
+## Windows Desktop App
+Windows installer ইনস্টল করে চালু করলে একই responsive interface আপনার default browser-এ local PC-তে খুলবে। Desktop build-এ web UI এবং local FastAPI server থাকবে। AI model চালাতে 8GB+ VRAM-সহ উপযুক্ত NVIDIA CUDA GPU প্রয়োজন (12GB+ ভালো)। Installer-এর মধ্যে model weights নেই; প্রথমবার conversion-এর সময় ডাউনলোড হবে।
