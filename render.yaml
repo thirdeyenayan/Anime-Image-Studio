@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: anime-image-studio-api
+    runtime: python
+    plan: starter
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: FAL_KEY
+        sync: false
