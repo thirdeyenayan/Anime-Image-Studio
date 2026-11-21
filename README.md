@@ -10,7 +10,7 @@ Local AI image-to-anime desktop app using Stable Diffusion XL (SDXL) + IP-Adapte
 - Save generated artwork as PNG.
 
 ## Hardware
-A modern NVIDIA CUDA GPU is required. 8 GB VRAM is a practical minimum; 12 GB+ is recommended. The user's older GeForce 820M with 2 GB VRAM is unsupported. CPU-only generation is disabled because it is impractically slow for this model.
+A modern NVIDIA CUDA GPU is required. 8 GB VRAM is a practical minimum; 12 GB+ is recommended. The user's older GeForce 820M with 2 GB VRAM is unsupported for SDXL, but can use the CPU Cartoon fallback. If a supported NVIDIA GPU is unavailable, the app falls back to a lightweight OpenCV CPU cartoon filter. This is a simpler effect, not SDXL-quality anime generation.
 
 ## Windows build
 GitHub Actions builds a Windows folder package and an Inno Setup installer. Open the Actions tab and run the **Build Windows Installer** workflow, or push to main. Download the workflow artifact after a successful run.
