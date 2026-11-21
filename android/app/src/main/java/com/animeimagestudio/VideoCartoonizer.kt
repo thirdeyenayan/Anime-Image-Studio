@@ -71,10 +71,10 @@ object VideoCartoonizer {
             encoder = MediaCodec.createEncoderByType(MIME)
             encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
             encoder.start()
+            val codec = encoder
             muxer = MediaMuxer(output.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
 
             fun drain(endOfStream: Boolean) {
-                val codec = encoder ?: return
                 var idle = 0
                 while (idle < 8) {
                     val index = codec.dequeueOutputBuffer(info, 10_000)
@@ -116,24 +116,30 @@ object VideoCartoonizer {
                 val nv12 = bitmapToNv12(styled)
                 styled.recycle()
 
-                var inputIndex = encoder.dequeueInputBuffer(100_000)
+                var inputIndex = codec.dequeueInputBuffer(100_000)
                 var attempts = 0
                 while (inputIndex < 0 && attempts++ < 20) {
                     drain(false)
-                    inputIndex = encoder.dequeueInputBuffer(100_000)
+                    inputIndex = codec.dequeueInputBuffer(100_000)
                 }
                 check(inputIndex >= 0) { "Video encoder is not responding" }
-                val input = encoder.getInputBuffer(inputIndex) ?: error("Encoder input buffer unavailable")
+                val input = codec.getInputBuffer(inputIndex) ?: error("Encoder input buffer unavailable")
                 input.clear()
                 input.put(nv12)
                 inputPts = frame * 1_000_000L / FPS
-                encoder.queueInputBuffer(inputIndex, 0, nv12.size, inputPts, 0)
+                codec.queueInputBuffer(inputIndex, 0, nv12.size, inputPts, 0)
                 drain(false)
                 onProgress(((frame + 1) * 95 / frameCount).coerceIn(1, 95))
             }
 
-            val eosIndex = encoder.dequeueInputBuffer(100_000)
-            if (eosIndex >= 0) encoder.queueInputBuffer(
+            var eosIndex = codec.dequeueInputBuffer(100_000)
+            var eosWaits = 0
+            while (eosIndex < 0 && eosWaits++ < 20) {
+                drain(false)
+                eosIndex = codec.dequeueInputBuffer(100_000)
+            }
+            check(eosIndex >= 0) { "Could not finish video encoding" }
+            codec.queueInputBuffer(
                 eosIndex, 0, 0, frameCount * 1_000_000L / FPS,
                 MediaCodec.BUFFER_FLAG_END_OF_STREAM
             )
