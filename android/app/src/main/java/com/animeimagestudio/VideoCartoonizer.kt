@@ -58,7 +58,6 @@ object VideoCartoonizer {
         var muxer: MediaMuxer? = null
         var muxerStarted = false
         var trackIndex = -1
-        var inputPts = 0L
         val info = MediaCodec.BufferInfo()
 
         try {
@@ -71,7 +70,7 @@ object VideoCartoonizer {
             encoder = MediaCodec.createEncoderByType(MIME)
             encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
             encoder.start()
-            val codec = encoder
+            val codec = encoder ?: error("Could not start video encoder")
             muxer = MediaMuxer(output.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
 
             fun drain(endOfStream: Boolean) {
@@ -126,8 +125,8 @@ object VideoCartoonizer {
                 val input = codec.getInputBuffer(inputIndex) ?: error("Encoder input buffer unavailable")
                 input.clear()
                 input.put(nv12)
-                inputPts = frame * 1_000_000L / FPS
-                codec.queueInputBuffer(inputIndex, 0, nv12.size, inputPts, 0)
+                val presentationTimeUs = frame * 1_000_000L / FPS
+                codec.queueInputBuffer(inputIndex, 0, nv12.size, presentationTimeUs, 0)
                 drain(false)
                 onProgress(((frame + 1) * 95 / frameCount).coerceIn(1, 95))
             }
